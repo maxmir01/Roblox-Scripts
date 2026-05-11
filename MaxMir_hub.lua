@@ -1,22 +1,10 @@
 --[[
     OG SABER SIMULATOR - MAXMIR HUB
-    ВСЁ РАБОЧЕЕ | Auto Swing, Boss Puller, Heart Collector, Reduce Lags включены по умолчанию
-    Boss Puller: телепорт к новому боссу + притягивание
+    by MaxMir | v1.0
 ]]
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-
-local states = {
-    autoSwing = true,
-    autoSell = false,
-    autoBuySabers = false,
-    autoBuyDNA = false,
-    bossPuller = true,
-    heartCollector = true,
-    bringAndKill = false,
-    reduceLags = true
-}
+local player = game.Players.LocalPlayer
+local states = {autoSwing = true, autoSell = false, autoBuySabers = false, autoBuyDNA = false, bossPuller = true, heartCollector = true, bringAndKill = false, reduceLags = true}
 local connections = {}
 local heartCount = 0
 local guiHidden = false
@@ -25,10 +13,7 @@ local buySabersCooldown = 0
 local buyDNACooldown = 0
 local trackedBosses = {}
 
--- ============================================
--- ФУНКЦИИ
--- ============================================
-
+-- Auto Swing
 local function autoSwingFunc()
     local char = player.Character
     if not char then return end
@@ -40,18 +25,14 @@ end
 local function autoSellFunc()
     if tick() - sellCooldown < 0.3 then return end
     sellCooldown = tick()
-    
     local char = player.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
     local zones = workspace:FindFirstChild("Zones")
     if not zones then return end
-    
     local sellFolder = zones:FindFirstChild("Sell")
     if not sellFolder then return end
-    
     for _, part in pairs(sellFolder:GetChildren()) do
         if part:IsA("BasePart") then
             local savedPos = root.CFrame
@@ -75,7 +56,7 @@ local function clickTab(btnName)
     return false
 end
 
--- Клик по Buy All (+30 вправо, +50 вниз)
+-- Клик по Buy All
 local function clickBuyAll()
     local gui = player.PlayerGui
     local btn = gui:FindFirstChild("BuyAll_Btn", true)
@@ -93,30 +74,22 @@ end
 local function autoBuySabersFunc()
     if tick() - buySabersCooldown < 2 then return end
     buySabersCooldown = tick()
-    
     local char = player.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
     local zones = workspace:FindFirstChild("Zones")
     if not zones then return end
-    
     local shopFolder = zones:FindFirstChild("Shop")
     if not shopFolder then return end
-    
     for _, part in pairs(shopFolder:GetChildren()) do
         if part:IsA("BasePart") then
             local savedPos = root.CFrame
-            
             root.CFrame = part.CFrame * CFrame.new(0, 3, 0)
             task.wait(0.3)
-            
             clickTab("SaberList_Btn")
             task.wait(0.3)
-            
             clickBuyAll()
-            
             task.wait(0.2)
             root.CFrame = savedPos
             return
@@ -128,30 +101,22 @@ end
 local function autoBuyDNAFunc()
     if tick() - buyDNACooldown < 2 then return end
     buyDNACooldown = tick()
-    
     local char = player.Character
     if not char then return end
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
-    
     local zones = workspace:FindFirstChild("Zones")
     if not zones then return end
-    
     local shopFolder = zones:FindFirstChild("Shop")
     if not shopFolder then return end
-    
     for _, part in pairs(shopFolder:GetChildren()) do
         if part:IsA("BasePart") then
             local savedPos = root.CFrame
-            
             root.CFrame = part.CFrame * CFrame.new(0, 3, 0)
             task.wait(0.3)
-            
             clickTab("DNAList_Btn")
             task.wait(0.3)
-            
             clickBuyAll()
-            
             task.wait(0.2)
             root.CFrame = savedPos
             return
@@ -159,7 +124,7 @@ local function autoBuyDNAFunc()
     end
 end
 
--- Boss Puller (телепорт к новому боссу + притягивание)
+-- Boss Puller
 local function bossPullerFunc()
     local char = player.Character
     if not char then return end
@@ -168,7 +133,6 @@ local function bossPullerFunc()
     local folder = workspace:FindFirstChild("Boss")
     if not folder then return end
     local names = {"Galactic Skeleton", "Dummy", "The Doombringer", "Noob", "Bunny", "Heart Lover", "Galactic Overload"}
-    
     for _, obj in pairs(folder:GetDescendants()) do
         if obj:IsA("Model") then
             for _, n in pairs(names) do
@@ -176,13 +140,10 @@ local function bossPullerFunc()
                     local bp = obj:FindFirstChild("HumanoidRootPart")
                     local hum = obj:FindFirstChild("Humanoid")
                     if bp and hum and hum.Health > 0 then
-                        -- Если босс новый (ещё не отслеживали)
                         if not trackedBosses[obj] then
                             trackedBosses[obj] = true
-                            -- Телепортируемся к нему
                             root.CFrame = bp.CFrame * CFrame.new(0, 0, 5)
                         end
-                        -- Обычное притягивание
                         pcall(function() bp:SetNetworkOwner(player) end)
                         pcall(function() bp.CFrame = root.CFrame * CFrame.new(0, 0, 5) bp.Velocity = Vector3.zero end)
                     end
@@ -190,12 +151,8 @@ local function bossPullerFunc()
             end
         end
     end
-    
-    -- Очистка мёртвых боссов
     for boss, _ in pairs(trackedBosses) do
-        if not boss.Parent then
-            trackedBosses[boss] = nil
-        end
+        if not boss.Parent then trackedBosses[boss] = nil end
     end
 end
 
@@ -223,15 +180,12 @@ local function bringAndKillFunc()
     local root = char:FindFirstChild("HumanoidRootPart")
     if not root then return end
     local target = root.CFrame
-    
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
+    for _, otherPlayer in ipairs(game.Players:GetPlayers()) do
         if otherPlayer ~= player then
             local otherChar = otherPlayer.Character
             if otherChar then
                 local otherRoot = otherChar:FindFirstChild("HumanoidRootPart")
-                if otherRoot then
-                    otherRoot.CFrame = target
-                end
+                if otherRoot then otherRoot.CFrame = target end
             end
         end
     end
@@ -242,31 +196,17 @@ local function reduceLagsFunc()
     pcall(function() game:GetService("Lighting").GlobalShadows = false end)
     pcall(function() game:GetService("Lighting").Technology = Enum.Technology.Compatibility end)
     pcall(function() settings().Rendering.QualityLevel = 1 end)
-    pcall(function() settings().Rendering.MeshPartDetailLevel = Enum.MeshPartDetailLevel.DistanceBased end)
     for _, obj in pairs(workspace:GetDescendants()) do
         if obj:IsA("ParticleEmitter") or obj:IsA("Beam") or obj:IsA("Trail") or obj:IsA("Fire") or obj:IsA("Smoke") then
             pcall(function() obj.Enabled = false end)
         end
     end
     for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("Texture") or obj:IsA("Decal") then
-            pcall(function() obj:Destroy() end)
-        end
+        if obj:IsA("BillboardGui") then pcall(function() obj.Enabled = false end) end
     end
-    -- Скрываем BillboardGui
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("BillboardGui") then
-            pcall(function() obj.Enabled = false end)
-        end
-    end
-    pcall(function() game:GetService("Workspace").Terrain.WaterWaveSize = 0 end)
-    pcall(function() game:GetService("Workspace").Terrain.WaterWaveSpeed = 0 end)
 end
 
--- ============================================
 -- GUI
--- ============================================
-
 local function createGUI()
     local sg = Instance.new("ScreenGui")
     sg.Name = "MaxMirHub"
@@ -274,9 +214,8 @@ local function createGUI()
     sg.ResetOnSpawn = false
 
     local main = Instance.new("Frame")
-    main.Name = "Main"
-    main.Size = UDim2.new(0, 500, 0, 420)
-    main.Position = UDim2.new(0.5, -250, 0.5, -210)
+    main.Size = UDim2.new(0, 500, 0, 380)
+    main.Position = UDim2.new(0.5, -250, 0.5, -190)
     main.BackgroundColor3 = Color3.fromRGB(14, 14, 18)
     main.BorderSizePixel = 0
     main.Parent = sg
@@ -293,7 +232,6 @@ local function createGUI()
     hf.Position = UDim2.new(0, 0, 1, -10)
     hf.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
     hf.BorderSizePixel = 0
-
     local line = Instance.new("Frame", header)
     line.Size = UDim2.new(1, 0, 0, 2)
     line.Position = UDim2.new(0, 0, 1, -2)
@@ -403,18 +341,10 @@ local function createGUI()
 
     local mainBtns = {}
     local names = {
-        {"Auto Swing", true},
-        {"Auto Sell", false},
-        {"Auto Buy Sabers", false},
-        {"Auto Buy DNA", false},
-        {"Boss Puller", true},
-        {"Heart Collector", true},
-        {"Bring and Kill All", false},
-        {"Reduce Lags", true}
+        {"Auto Swing", true}, {"Auto Sell", false}, {"Auto Buy Sabers", false}, {"Auto Buy DNA", false},
+        {"Boss Puller", true}, {"Heart Collector", true}, {"Bring and Kill All", false}, {"Reduce Lags", true}
     }
-    for i, data in pairs(names) do
-        mainBtns[data[1]] = makeToggle(mainPage, data[1], i, data[2])
-    end
+    for i, data in pairs(names) do mainBtns[data[1]] = makeToggle(mainPage, data[1], i, data[2]) end
 
     local heartLab = Instance.new("TextLabel", mainBtns["Heart Collector"].f)
     heartLab.Size = UDim2.new(0, 55, 0, 14)
@@ -460,15 +390,7 @@ local function createGUI()
             else if connections[7] then connections[7]:Disconnect() end end
         end,
         ["Reduce Lags"] = function(on)
-            if on then
-                reduceLagsFunc()
-                task.spawn(function()
-                    while states.reduceLags do
-                        reduceLagsFunc()
-                        task.wait(5)
-                    end
-                end)
-            end
+            if on then reduceLagsFunc() end
         end
     }
 
@@ -479,12 +401,9 @@ local function createGUI()
         ["Bring and Kill All"] = "bringAndKill", ["Reduce Lags"] = "reduceLags"
     }
 
-    -- Запускаем функции которые по умолчанию ON
     for name, obj in pairs(mainBtns) do
         local key = stateMap[name]
-        if states[key] and toggleFuncs[name] then
-            toggleFuncs[name](true)
-        end
+        if states[key] and toggleFuncs[name] then toggleFuncs[name](true) end
     end
 
     for name, obj in pairs(mainBtns) do
